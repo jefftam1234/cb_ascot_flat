@@ -100,6 +100,14 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     recall_spot = spot_for_cb_level(spots, results["cb_pv"], recall_level)
     recall_label = "linear R0" if ascot.recall_price_model == "linear" else "swap R(0)"
 
+    # CB proxy Greeks are zero where the ASCOT is out-of-the-money (CB < R0).
+    otm = results["cb_pv"] < recall_level
+    delta_cb = np.where(otm, 0.0, results["delta_cb"])
+    gamma_cb = np.where(otm, 0.0, results["gamma_cb"])
+    vega_cb  = np.where(otm, 0.0, results["vega_cb"])
+    ir01_cb  = np.where(otm, 0.0, results["ir01_cb"])
+    cs01_cb  = np.where(otm, 0.0, results["cs01_cb"])
+
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(spots, results["ascot_full"], label="ASCOT full (American)", color="steelblue", lw=2)
     ax.plot(spots, results["ascot_intr"], label=f"ASCOT intrinsic (CB - {recall_label}={r0:.2f})", color="darkorange", lw=2, ls="--")
@@ -116,7 +124,7 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(spots, results["delta_full"], label="ASCOT full Delta", color="steelblue", lw=2)
     ax.plot(spots, results["delta_intr"], label="ASCOT intrinsic Delta", color="darkorange", lw=2, ls="--")
-    ax.plot(spots, results["delta_cb"], label="ASCOT CB Proxy [Delta]", color="seagreen", lw=2, ls="-.")
+    ax.plot(spots, delta_cb, label="ASCOT CB Proxy [Delta]", color="seagreen", lw=2, ls="-.")
     ax.axhline(0, color="black", lw=0.5)
     if recall_spot is not None:
         ax.axvline(recall_spot, color="black", lw=1, ls=":", label=f"S* where CB = R0 ({recall_spot:.1f})")
@@ -128,7 +136,7 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(spots, results["gamma_full"], label="ASCOT full Gamma", color="steelblue", lw=2)
     ax.plot(spots, results["gamma_intr"], label="ASCOT intrinsic Gamma", color="darkorange", lw=2, ls="--")
-    ax.plot(spots, results["gamma_cb"], label="ASCOT CB Proxy [Gamma]", color="seagreen", lw=2, ls="-.")
+    ax.plot(spots, gamma_cb, label="ASCOT CB Proxy [Gamma]", color="seagreen", lw=2, ls="-.")
     ax.axhline(0, color="black", lw=0.5)
     if recall_spot is not None:
         ax.axvline(recall_spot, color="black", lw=1, ls=":", label=f"S* where CB = R0 ({recall_spot:.1f})")
@@ -140,7 +148,7 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(spots, results["vega_full"], label="ASCOT full Vega", color="steelblue", lw=2)
     ax.plot(spots, results["vega_intr"], label="ASCOT intrinsic Vega", color="darkorange", lw=2, ls="--")
-    ax.plot(spots, results["vega_cb"], label="ASCOT CB Proxy [Vega]", color="seagreen", lw=2, ls="-.")
+    ax.plot(spots, vega_cb, label="ASCOT CB Proxy [Vega]", color="seagreen", lw=2, ls="-.")
     ax.axhline(0, color="black", lw=0.5)
     if recall_spot is not None:
         ax.axvline(recall_spot, color="black", lw=1, ls=":", label=f"S* where CB = R0 ({recall_spot:.1f})")
@@ -152,7 +160,7 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(spots, results["ir01_full"], label="ASCOT full IR01", color="steelblue", lw=2)
     ax.plot(spots, results["ir01_intr"], label="ASCOT intrinsic IR01", color="darkorange", lw=2, ls="--")
-    ax.plot(spots, results["ir01_cb"], label="ASCOT CB Proxy [IR01]", color="seagreen", lw=2, ls="-.")
+    ax.plot(spots, ir01_cb, label="ASCOT CB Proxy [IR01]", color="seagreen", lw=2, ls="-.")
     ax.axhline(0, color="black", lw=0.5)
     if recall_spot is not None:
         ax.axvline(recall_spot, color="black", lw=1, ls=":", label=f"S* where CB = R0 ({recall_spot:.1f})")
@@ -164,7 +172,7 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(spots, results["cs01_full"], label="ASCOT full CS01", color="steelblue", lw=2)
     ax.plot(spots, results["cs01_intr"], label="ASCOT intrinsic CS01", color="darkorange", lw=2, ls="--")
-    ax.plot(spots, results["cs01_cb"], label="ASCOT CB Proxy [CS01]", color="seagreen", lw=2, ls="-.")
+    ax.plot(spots, cs01_cb, label="ASCOT CB Proxy [CS01]", color="seagreen", lw=2, ls="-.")
     ax.axhline(0, color="black", lw=0.5)
     if recall_spot is not None:
         ax.axvline(recall_spot, color="black", lw=1, ls=":", label=f"S* where CB = R0 ({recall_spot:.1f})")
