@@ -1,0 +1,28 @@
+{
+  "market": {
+    "r": 0.03,
+    "lambda": 0.0095,
+    "recovery_fraction": 0.4
+  },
+  "stocks": {
+    "4613 JT": {
+      "q": 0.0165,
+      "sigma": 0.2741668178,
+      "stock_borrow_cost": 0.004,
+      "valuation_date": "2025-02-28",
+      "market_price": 101.65,
+      "share_price": 2136.5,
+      "annual_dividend_yield": 0.0165,
+      "dividend_type": "Absolute",
+      "absolute_dividends": [
+        {"date": "2025-03-28", "value": 22.0},
+        {"date": "2025-09-29", "value": 22.0},
+        {"date": "2026-03-30", "value": 22.0},
+        {"date": "2026-09-29", "value": 22.0},
+        {"date": "2027-03-30", "value": 22.0},
+        {"date": "2027-09-29", "value": 22.0},
+        {"date": "2028-03-30", "value": 22.0}
+      ]
+    }
+  }
+}

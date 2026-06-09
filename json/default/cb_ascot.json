@@ -1,0 +1,25 @@
+{
+  "cb": {
+    "face": 100.0,
+    "conversion_ratio": 1.0,
+    "maturity": 5.0,
+    "conversion_start_time": 0.0,
+    "conversion_end_time": 5.0,
+    "coupon": 2.0,
+    "coupon_frequency_per_year": 2,
+    "call_price": 100.0,
+    "call_start_time": 2.0,
+    "put_price": 100.0,
+    "put_frequency_per_year": 1,
+    "put_start_time": 1.0
+  },
+  "ascot": {
+    "recall_price_start": 95.0,
+    "recall_price_end": 100.0,
+    "recall_expiry": 5.0,
+    "recall_price_model": "linear",
+    "swap_fixed_rate": 0.03,
+    "swap_recall_spread": 0.01,
+    "swap_discount_rate": null
+  }
+}

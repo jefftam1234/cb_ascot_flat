@@ -1,0 +1,7 @@
+{
+  "r": 0.03,
+  "q": 0.01,
+  "sigma": 0.3,
+  "lambda": 0.02,
+  "recovery_fraction": 0.4
+}
