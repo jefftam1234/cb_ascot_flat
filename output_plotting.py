@@ -30,7 +30,9 @@ def bundle_name_from_terms_path(terms_path):
     bundle = os.path.basename(os.path.normpath(terms_path))
     if bundle == "kansai_paint":
         return "kansai"
-    if bundle in {"default", "kansai"}:
+    if bundle == "kansai_effective_ascot":
+        return "kansai_effective"
+    if bundle in {"default", "kansai", "kansai_effective"}:
         return bundle
     return bundle or "default"
 
@@ -117,24 +119,30 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     recall_label = "linear R0" if ascot.recall_price_model == "linear" else "swap R(0)"
 
     # CB proxy Greeks are zero where the ASCOT is out-of-the-money (CB < R0).
+    # CB standalone Greeks are the raw CB sensitivities with no OTM masking.
     otm = results["cb_pv"] < recall_level
     delta_full = results["delta_full"] * ds_dx
     delta_intr = results["delta_intr"] * ds_dx
-    delta_cb = np.where(otm, 0.0, results["delta_cb"]) * ds_dx
+    delta_cb_proxy = np.where(otm, 0.0, results["delta_cb"]) * ds_dx
+    delta_cb_raw = results["delta_cb"] * ds_dx
     gamma_full = results["gamma_full"] * ds_dx**2
     gamma_intr = results["gamma_intr"] * ds_dx**2
-    gamma_cb = np.where(otm, 0.0, results["gamma_cb"]) * ds_dx**2
+    gamma_cb_proxy = np.where(otm, 0.0, results["gamma_cb"]) * ds_dx**2
+    gamma_cb_raw = results["gamma_cb"] * ds_dx**2
     vol_point = 0.01
     bp = 1e-4
     vega_full = results["vega_full"] * vol_point
     vega_intr = results["vega_intr"] * vol_point
-    vega_cb = np.where(otm, 0.0, results["vega_cb"]) * vol_point
+    vega_cb_proxy = np.where(otm, 0.0, results["vega_cb"]) * vol_point
+    vega_cb_raw = results["vega_cb"] * vol_point
     ir01_full = results["ir01_full"] * bp
     ir01_intr = results["ir01_intr"] * bp
-    ir01_cb = np.where(otm, 0.0, results["ir01_cb"]) * bp
+    ir01_cb_proxy = np.where(otm, 0.0, results["ir01_cb"]) * bp
+    ir01_cb_raw = results["ir01_cb"] * bp
     cs01_full = results["cs01_full"] * bp
     cs01_intr = results["cs01_intr"] * bp
-    cs01_cb = np.where(otm, 0.0, results["cs01_cb"]) * bp
+    cs01_cb_proxy = np.where(otm, 0.0, results["cs01_cb"]) * bp
+    cs01_cb_raw = results["cs01_cb"] * bp
 
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(x, results["ascot_full"], label="ASCOT full (American)", color="steelblue", lw=2)
@@ -152,7 +160,8 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(x, delta_full, label="ASCOT full Delta", color="steelblue", lw=2)
     ax.plot(x, delta_intr, label="ASCOT intrinsic Delta", color="darkorange", lw=2, ls="--")
-    ax.plot(x, delta_cb, label="ASCOT CB Proxy [Delta]", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, delta_cb_proxy, label="CB proxy Delta (zero OTM)", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, delta_cb_raw, label="CB standalone Delta", color="crimson", lw=1.5, ls=":")
     ax.axhline(0, color="black", lw=0.5)
     if recall_x is not None:
         ax.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* where CB = R0 ({recall_x:.1f}%)")
@@ -164,7 +173,8 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(x, gamma_full, label="ASCOT full Gamma", color="steelblue", lw=2)
     ax.plot(x, gamma_intr, label="ASCOT intrinsic Gamma", color="darkorange", lw=2, ls="--")
-    ax.plot(x, gamma_cb, label="ASCOT CB Proxy [Gamma]", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, gamma_cb_proxy, label="CB proxy Gamma (zero OTM)", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, gamma_cb_raw, label="CB standalone Gamma", color="crimson", lw=1.5, ls=":")
     ax.axhline(0, color="black", lw=0.5)
     if recall_x is not None:
         ax.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* where CB = R0 ({recall_x:.1f}%)")
@@ -176,7 +186,8 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(x, vega_full, label="ASCOT full Vega", color="steelblue", lw=2)
     ax.plot(x, vega_intr, label="ASCOT intrinsic Vega", color="darkorange", lw=2, ls="--")
-    ax.plot(x, vega_cb, label="ASCOT CB Proxy [Vega]", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, vega_cb_proxy, label="CB proxy Vega (zero OTM)", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, vega_cb_raw, label="CB standalone Vega", color="crimson", lw=1.5, ls=":")
     ax.axhline(0, color="black", lw=0.5)
     if recall_x is not None:
         ax.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* where CB = R0 ({recall_x:.1f}%)")
@@ -188,7 +199,8 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(x, ir01_full, label="ASCOT full IR01", color="steelblue", lw=2)
     ax.plot(x, ir01_intr, label="ASCOT intrinsic IR01", color="darkorange", lw=2, ls="--")
-    ax.plot(x, ir01_cb, label="ASCOT CB Proxy [IR01]", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, ir01_cb_proxy, label="CB proxy IR01 (zero OTM)", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, ir01_cb_raw, label="CB standalone IR01", color="crimson", lw=1.5, ls=":")
     ax.axhline(0, color="black", lw=0.5)
     if recall_x is not None:
         ax.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* where CB = R0 ({recall_x:.1f}%)")
@@ -200,13 +212,38 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(x, cs01_full, label="ASCOT full CS01", color="steelblue", lw=2)
     ax.plot(x, cs01_intr, label="ASCOT intrinsic CS01", color="darkorange", lw=2, ls="--")
-    ax.plot(x, cs01_cb, label="ASCOT CB Proxy [CS01]", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, cs01_cb_proxy, label="CB proxy CS01 (zero OTM)", color="seagreen", lw=2, ls="-.")
+    ax.plot(x, cs01_cb_raw, label="CB standalone CS01", color="crimson", lw=1.5, ls=":")
     ax.axhline(0, color="black", lw=0.5)
     if recall_x is not None:
         ax.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* where CB = R0 ({recall_x:.1f}%)")
     setup_ax(ax, "ASCOT CS01 vs Initial Parity", x_label, "CS01 (per 1 bp, per 100 notional)")
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "plot_cs01.png"), dpi=150)
+    plt.close(fig)
+
+    walk_away_pv = results["ascot_full"] - results["ascot_intr"]
+    walk_away_delta = (results["delta_full"] - results["delta_intr"]) * ds_dx
+
+    fig, (ax_pv, ax_d) = plt.subplots(2, 1, figsize=(9, 8), sharex=True)
+    ax_pv.plot(x, walk_away_pv, color="steelblue", lw=2, label="Walk-away put value")
+    ax_pv.axhline(0, color="black", lw=0.5)
+    if recall_x is not None:
+        ax_pv.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* ({recall_x:.1f}%)")
+    ax_pv.set_ylabel("PV (per 100 notional)")
+    ax_pv.set_title("Walk-away Put — Value and Delta vs Initial Parity")
+    ax_pv.grid(True, linestyle="--", alpha=0.5)
+    ax_pv.legend()
+    ax_d.plot(x, walk_away_delta, color="steelblue", lw=2, label="Walk-away put Delta")
+    ax_d.axhline(0, color="black", lw=0.5)
+    if recall_x is not None:
+        ax_d.axvline(recall_x, color="black", lw=1, ls=":", label=f"Parity* ({recall_x:.1f}%)")
+    ax_d.set_xlabel(x_label)
+    ax_d.set_ylabel("Delta (per 100 notional)")
+    ax_d.grid(True, linestyle="--", alpha=0.5)
+    ax_d.legend()
+    fig.tight_layout()
+    fig.savefig(os.path.join(output_dir, "plot_walk_away_put.png"), dpi=150)
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -226,7 +263,7 @@ def plot_all(spots, results, cb, ascot, market, output_dir=DEFAULT_OUTPUT, value
 
     for name in [
         "plot_pv.png", "plot_delta.png", "plot_gamma.png", "plot_vega.png",
-        "plot_ir01.png", "plot_cs01.png", "plot_cb.png"
+        "plot_ir01.png", "plot_cs01.png", "plot_walk_away_put.png", "plot_cb.png"
     ]:
         print(f"Saved {os.path.join(output_dir, name)}")
 

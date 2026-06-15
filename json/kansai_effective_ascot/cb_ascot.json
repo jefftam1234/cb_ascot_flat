@@ -1,0 +1,34 @@
+{
+  "cb": {
+    "ticker": "4613 JT",
+    "face": 100.0,
+    "denomination": 10000000.0,
+    "conversion_ratio": 0.03611933829372246,
+    "maturity": 6.99726,
+    "conversion_start_time": 0.0,
+    "conversion_end_time": 6.9589,
+    "issue_price": 102.5,
+    "market_price": 101.65,
+    "conversion_price": 2768.6,
+    "valuation_date": "2025-02-28",
+    "settlement_date": "2024-03-08",
+    "coupon": 0.0,
+    "coupon_frequency_per_year": 1,
+    "coupon_pattern": "Annual",
+    "first_coupon_type": "Short",
+    "call_price": 100.0,
+    "call_start_time": 999.0,
+    "put_price": 100.0,
+    "put_frequency_per_year": 1,
+    "put_start_time": 999.0
+  },
+  "ascot": {
+    "recall_price_start": 95.0,
+    "recall_price_end": 100.0,
+    "recall_expiry": 2.757,
+    "recall_price_model": "linear",
+    "swap_fixed_rate": 0.03,
+    "swap_recall_spread": 0.01,
+    "swap_discount_rate": null
+  }
+}

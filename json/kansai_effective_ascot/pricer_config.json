@@ -1,0 +1,18 @@
+{
+  "coupon_paid_on_put": true,
+  "credit_model": "credit_spread",
+  "output": {
+    "basis": "per_100"
+  },
+  "soft_call": {
+    "enabled": false,
+    "method": "one_touch_vol_adjusted",
+    "start_time": null,
+    "trigger_multiple": 1.3,
+    "reference_spot": 100.0,
+    "m": 20,
+    "n": 30,
+    "trading_days_per_year": 252,
+    "vol_buffer_stddevs": 0.5
+  }
+}

@@ -35,8 +35,7 @@ the present value of the remaining coupon stream converges toward zero and R(t) 
 upward toward par.  The precise path of accretion is not necessarily linear: it depends
 on the coupon schedule, the recall spread, and prevailing rates.
 
-Market convention values the ASCOT at its intrinsic value, defined as max(CB(S, 0)
-- R(0), 0), which treats the ASCOT as if exercise is immediate.  The full American model
+Market convention values the ASCOT at its intrinsic value, defined as max(CB(S, 0)- R(0), 0), which treats the ASCOT as if exercise is immediate.  The full American model
 recognizes that the holder retains the option to wait and values this right explicitly.
 The American time value is the excess of the full value over the intrinsic value and is
 non-negative at every spot level by the American option lower bound.
@@ -62,7 +61,85 @@ expiry, which holds for all practical spot levels.
 
 ---
 
-### 5.12.2 Credit Spread Sensitivity (CS01)
+### 5.12.2 Equity Sensitivity (Delta and Gamma)
+
+**Delta**
+
+The full ASCOT delta equals the CB proxy delta plus the walk-away put delta:
+
+> Delta_full = Delta_proxy + Delta_walk-away
+
+where Delta_proxy is zero in the OTM region and equals CB_Delta in the ITM region.
+
+The walk-away put delta changes sign across S*, and this sign change is the mechanism
+behind the full ASCOT delta behaviour in both regions.
+
+In the **OTM region**, the walk-away put is the entirety of the ASCOT value.  As spot
+rises toward S*, the probability of future exercise increases and the walk-away put value
+rises with it: Delta_walk-away > 0.  The full ASCOT therefore carries positive delta even
+where the CB proxy assigns zero.
+
+In the **ITM region**, the walk-away put is out-of-the-money on the CB.  Its residual
+value is positive but shrinking — as the CB moves further above R(t), a credit event
+serious enough to push the CB back below R(t) becomes progressively less likely.  As spot
+rises, that residual shrinks further: Delta_walk-away < 0.  The full ASCOT delta is
+therefore below CB_Delta, and the CB proxy, which tracks CB_Delta with no offset,
+overstates the true equity exposure.
+
+The sign of Delta_walk-away immediately above S* determines whether a crossover between
+Delta_full and CB_Delta occurs.  By the smooth-pasting condition, Delta_full is continuous
+at S*, which constrains:
+
+> Delta_walk-away at S+* = OTM delta(S*) − CB_Delta(S*)
+
+If the ASCOT's accumulated OTM delta at S* exceeds CB_Delta(S*), the walk-away put delta
+is still positive just above S*, Delta_full briefly overshoots CB_Delta, and a crossover
+occurs later.  If the CB is already carrying meaningful equity sensitivity at S*, the
+walk-away put delta is immediately negative above S* and no crossover occurs.
+
+**Gamma**
+
+Near S*, the ASCOT is at-the-money as a call option on the CB.  At-the-money options have
+their highest gamma for a given underlying, because the option delta changes most rapidly
+near the strike.  The ASCOT's option layer therefore adds convexity near S*, and
+Gamma_full > Gamma_CB near the exercise boundary.
+
+As the ASCOT moves deeper ITM, the walk-away put becomes increasingly out-of-the-money on
+the CB, loses its convexity contribution, and Gamma_full converges back toward Gamma_CB.
+The rate and direction of convergence — whether Gamma_full approaches from above or crosses
+below Gamma_CB — depends on the CB's own gamma profile and the residual time value
+gradient.
+
+---
+
+### 5.12.3 Volatility Sensitivity (Vega)
+
+Since ASCOT_full = ASCOT_intrinsic + walk-away put, the vega of the full ASCOT is:
+
+> Vega_full = Vega_intrinsic + Vega_walk-away
+
+The walk-away put always gains value when equity volatility rises (higher volatility
+implies fatter tails, increasing the probability of large downward moves that the walk-away
+right protects against).  Therefore Vega_walk-away is strictly positive, which implies
+Vega_full > Vega_intrinsic throughout the spot range.
+
+In the out-of-the-money region, Vega_intrinsic = 0, so the full Vega is solely from the
+walk-away put's optionality.  In the in-the-money region, Vega_intrinsic = CB_Vega and
+the walk-away put adds a positive increment on top, so Vega_full > CB_Vega as long as the
+walk-away put has non-trivial time value.  As the ASCOT goes deeply in-the-money the
+walk-away put approaches zero value and Vega_full converges toward CB_Vega from above.
+
+Whether Vega_full exceeds CB_Vega in the out-of-the-money region depends on the magnitude
+of CB_Vega in that region.  CB_Vega at low spot levels reflects the CB's embedded equity
+option.  For a CB whose embedded conversion option is far out-of-the-money and nearly
+valueless, CB_Vega is near zero and even a small Vega_walk-away exceeds it.  For a CB
+whose embedded equity option retains meaningful time value at out-of-the-money ASCOT
+levels, CB_Vega is non-trivial and the ASCOT's diluted participation (delta-on-CB < 1)
+may result in Vega_full falling below CB_Vega in that region.
+
+---
+
+### 5.12.4 Credit Spread Sensitivity (CS01)
 
 CS01 measures the sensitivity of the instrument value to a parallel shift in the credit
 spread, proxied here by a shift in the issuer hazard rate lambda.
@@ -91,9 +168,16 @@ right to walk away more valuable.  These two effects partially or fully offset e
 and the net full CS01 is substantially smaller in magnitude than CB_CS01 at all spot
 levels.
 
+The economic reason for the offset is structural.  The ASCOT holder does not bear the
+default loss the way a CB holder does: if the issuer defaults, the ASCOT holder simply
+does not exercise — there is no delivery obligation and no loss of principal.  The
+walk-away right provides this insulation precisely because it is long the credit tail risk
+that the CB holder is short.  A credit spread widening that harms the CB holder therefore
+partially benefits the ASCOT holder through the appreciating walk-away put.
+
 ---
 
-### 5.12.3 Interest Rate Sensitivity (IR01)
+### 5.12.5 Interest Rate Sensitivity (IR01)
 
 IR01 measures the sensitivity to a parallel shift in the risk-free rate r.
 
@@ -124,81 +208,18 @@ approximation therefore gets not only the magnitude but the sign of IR01 wrong.
 
 ---
 
-### 5.12.4 Volatility Sensitivity (Vega)
+**Conclusion**
 
-Since ASCOT_full = ASCOT_intrinsic + walk-away put, the vega of the full ASCOT is:
-
-> Vega_full = Vega_intrinsic + Vega_walk-away
-
-The walk-away put always gains value when equity volatility rises (higher volatility
-implies fatter tails, increasing the probability of large downward moves that the walk-away
-right protects against).  Therefore Vega_walk-away is strictly positive, which implies
-Vega_full > Vega_intrinsic throughout the spot range.
-
-In the out-of-the-money region, Vega_intrinsic = 0, so the full Vega is solely from the
-walk-away put's optionality.  In the in-the-money region, Vega_intrinsic = CB_Vega and
-the walk-away put adds a positive increment on top, so Vega_full > CB_Vega as long as the
-walk-away put has non-trivial time value.  As the ASCOT goes deeply in-the-money the
-walk-away put approaches zero value and Vega_full converges toward CB_Vega from above.
-
-Whether Vega_full exceeds CB_Vega in the out-of-the-money region depends on the magnitude
-of CB_Vega in that region.  CB_Vega at low spot levels reflects the CB's embedded equity
-option.  For a CB whose embedded conversion option is far out-of-the-money and nearly
-valueless, CB_Vega is near zero and even a small Vega_walk-away exceeds it.  For a CB
-whose embedded equity option retains meaningful time value at out-of-the-money ASCOT
-levels, CB_Vega is non-trivial and the ASCOT's diluted participation (delta-on-CB < 1)
-may result in Vega_full falling below CB_Vega in that region.
-
----
-
-### 5.12.5 Equity Sensitivity (Delta and Gamma)
-
-**Delta**
-
-The single contrasting force is the gradient of the ASCOT time value with respect to
-spot.
-
-The ASCOT time value follows a hump shape as a function of spot: it rises through the OTM
-region as the underlying CB approaches the exercise boundary and the probability of
-profitable exercise increases, peaks somewhere near or just above S*, and then falls
-through the ITM region as the walk-away right loses relevance with the CB well above
-R(t).  The slope of this hump is the extra delta term:
-
-> Delta_full = CB_Delta + d(time value)/dS
-
-where CB_Delta is the intrinsic delta — zero in the OTM region, equal to the raw CB delta
-in the ITM region.
-
-In the OTM region, d(time value)/dS > 0, so Delta_full is positive while the CB proxy
-delta is zero.
-
-In the deep ITM region, d(time value)/dS < 0, so Delta_full = CB_Delta + (negative) <
-CB_Delta.
-
-Whether Delta_full ever exceeds CB_Delta in the ITM region depends on the level of
-d(time value)/dS at S*.  By smooth-pasting, Delta_full is continuous at S*, which fixes
-the sign of d(time value)/dS immediately above S*:
-
-> d(time value)/dS at S*, ITM side = OTM delta(S*) − CB_Delta(S*)
-
-If the OTM delta at S* exceeds CB_Delta(S*), d(time value)/dS is positive just above S*,
-Delta_full overshoots CB_Delta, and a crossover occurs later as the hump slopes away.
-If the OTM delta at S* is below CB_Delta(S*), d(time value)/dS is immediately negative
-above S* and Delta_full is below CB_Delta throughout the entire ITM region with no
-crossover.
-
-**Gamma**
-
-Near S*, the ASCOT is at-the-money as a call option on the CB.  At-the-money options have
-their highest gamma for a given underlying, because the option delta changes most rapidly
-near the strike.  The ASCOT's option layer therefore adds convexity near S*, and
-Gamma_full > Gamma_CB near the exercise boundary.
-
-As the ASCOT moves deeper ITM, the walk-away put becomes increasingly out-of-the-money on
-the CB, loses its convexity contribution, and Gamma_full converges back toward Gamma_CB.
-The rate and direction of convergence — whether Gamma_full approaches from above or crosses
-below Gamma_CB — depends on the CB's own gamma profile and the residual time value
-gradient.
+The American time value of the ASCOT — the walk-away put — is economically material and
+produces risk profiles that differ notably from both the market-convention intrinsic
+approximation and the raw CB proxy across all Greeks.  The intrinsic approximation assigns
+zero value and zero sensitivity in the OTM region where the walk-away put is the entirety
+of the ASCOT, and it misrepresents the direction or magnitude of every Greek in the ITM
+region: it overstates equity delta, understates vega, overstates credit sensitivity, and
+inverts the sign of rate sensitivity.  These differences are not small corrections but
+structural errors arising from ignoring the walk-away right.  Section 5.19 tests and
+quantifies these differences numerically across a representative CB and translates them
+into portfolio-level model risk exposures.
 
 ---
 
@@ -206,21 +227,21 @@ gradient.
 
 **Goal**
 
-To establish the numerical correctness of the independent CB/ASCOT flat pricing
-implementation and to verify numerically the theoretical predictions from Section 5.12
-for each representative instrument.  The specific model assumption under test is that
-pricing the ASCOT as a true American option on the CB produces materially different risk
-sensitivities compared to the market-convention intrinsic approximation and the raw CB
-proxy, and that neither approximation is adequate for use in hedging.
+To test the model assumption: *is using intrinsic valuation adequate and appropriate for
+pricing and hedging the ASCOT?*  Market convention values the ASCOT at its intrinsic
+value max(CB − R(0), 0), discarding the walk-away put that an American model prices
+explicitly.  This section tests numerically whether that discarded time value is material
+to the risk sensitivities used in hedging.
 
 **Scope**
 
 The analysis uses two representative instruments: a synthetic short-maturity CB (the
 ``default'' bundle) and the Kansai Paint convertible bond (4613 JT), a real-world long-
 maturity zero-coupon CB.  The CB pricing implementation is first benchmarked against
-QuantLib.  The full suite of Greeks is then computed across the spot range for each
-instrument under three pricing conventions: the full American ASCOT, the intrinsic
-approximation (market convention), and the raw CB proxy.
+QuantLib to confirm correctness of the obstacle surface.  The full suite of Greeks is
+then computed across the spot range for each instrument under three pricing conventions:
+the full American ASCOT, the intrinsic approximation (market convention), and the raw CB
+proxy.
 
 **Methodology**
 
@@ -235,20 +256,33 @@ PDE and clean risk-free discounting for the ASCOT PDE.
 
 ### 5.19.1 CB Implementation Benchmark Against QuantLib
 
-**Goal**
+A synthetic default CB is constructed with simple, controlled parameters to provide a
+clean benchmark.  The instrument is a short-dated coupon CB with both issuer call and
+holder put provisions, chosen so that all CB sub-model components (credit-adjusted
+discounting, conversion option, embedded call, embedded put) are simultaneously active
+and testable.
 
-To confirm that the CB pricing engine in the validation tool produces results consistent
-with an independently recognized standard implementation before using it as the ASCOT
-obstacle surface.
+| Parameter | Value |
+|---|---|
+| Face value | 100.00 per-100 |
+| Conversion ratio κ | 1.0000 |
+| Maturity | 5.00 years |
+| Coupon | 2.00% (semi-annual) |
+| Issuer call | 100.00 from year 2.00 |
+| Holder put | 100.00 from year 1.00 |
+| Risk-free rate r | 3.00% |
+| Dividend yield q | 1.00% |
+| Equity volatility σ | 30.00% |
+| Hazard rate λ | 2.00% |
+| Recovery fraction | 40.00% |
 
-**Scope**
+The same instrument is used in Appendix A for the ASCOT Greek profile analysis, where
+the ASCOT recall terms are introduced.
 
-The default synthetic CB is priced at 10 representative spot levels using the local
-Crank-Nicolson finite-difference engine and independently using QuantLib's binomial
-convertible-bond engine, both under the Tsiveriotis-Fernandes credit-spread configuration
-with identical market and term parameters.
-
-**Result**
+The CB is priced at 10 representative spot levels using the local Crank-Nicolson
+finite-difference engine and independently using QuantLib's binomial convertible-bond
+engine, both under the Tsiveriotis-Fernandes credit-spread configuration with identical
+market and term parameters.
 
 | Spot | Local PV | QuantLib PV | Difference |
 |---:|---:|---:|---:|
@@ -264,287 +298,14 @@ with identical market and term parameters.
 | 200.00 | 201.091373 | 201.087293 | +0.004080 |
 
 The mean absolute error is 0.0073 per-100, the RMSE is 0.0100, and the maximum absolute
-error is 0.0281 per-100.  The maximum relative error is 0.027%.
-
-**Conclusion**
-
-The differences are within the expected discretization tolerance between a finite-
-difference PDE and a binomial lattice.  The CB implementation is accepted as the obstacle
-surface for ASCOT pricing in the following sections.
+error is 0.0281 per-100.  The maximum relative error is 0.027%.  The differences are
+within the expected discretization tolerance between a finite-difference PDE and a
+binomial lattice.  The CB implementation is accepted as the obstacle surface for ASCOT
+pricing in the following sections.
 
 ---
 
-### 5.19.2 ASCOT Greek Profiles --- Synthetic Default Instrument
-
-#### Instrument Terms
-
-**CB Terms**
-
-| Parameter | Value |
-|---|---|
-| Face value | 100.00 per-100 |
-| Conversion ratio κ | 1.0000 |
-| Maturity | 5.00 years |
-| Annual coupon | 2.00 (semi-annual) |
-| Issuer call price | 100.00 (callable from year 2.00) |
-| Holder put price | 100.00 (puttable from year 1.00) |
-
-**Market Parameters**
-
-| Parameter | Value |
-|---|---|
-| Risk-free rate r | 3.00% |
-| Dividend yield q | 1.00% |
-| Equity volatility σ | 30.00% |
-| Hazard rate λ | 2.00% |
-| Recovery fraction | 40.00% |
-
-**ASCOT Terms**
-
-| Parameter | Value |
-|---|---|
-| Recall price R(0) | 95.00 per-100 |
-| Recall price R(T_rec) | 100.00 per-100 |
-| Recall price model | Linear accretion |
-| Recall expiry | 5.00 years |
-| Swap fixed rate | 3.00% |
-| Swap recall spread | 1.00% |
-
-The initial recall level R(0) = 95.00 is crossed at S* = 41.58.  Below this level the
-ASCOT intrinsic is zero.  Above this level the ASCOT is in-the-money.  All spot levels
-in the plot range of 20 to 200 are covered.
-
----
-
-#### CB Profile
-
-![CB Price vs Initial Parity (Default)](output/default/plot_cb.png)
-
-The CB profile transitions from a near-bond-floor level at low spot (94.28 at S = 20.0)
-to a deep equity-linked level at high spot (201.09 at S = 200.0).  The conversion value
-line κS = S intersects the CB curve in the range S = 100 to 120, marking the transition
-from bond-dominated to equity-dominated valuation.  The initial recall level R(0) = 95.00
-is crossed at S* = 41.58, visually marking the ASCOT in-the-money boundary.
-
----
-
-#### PV Profile
-
-![ASCOT PV vs Initial Parity (Default)](output/default/plot_pv.png)
-
-The time value (shaded region, full minus intrinsic) is positive across the entire spot
-range.  At deep out-of-the-money levels (S = 20.0 to S = 41.4) the intrinsic is zero and
-the full ASCOT value is entirely time value: 3.79 at S = 20.0, rising to 5.06 at S = 41.4
-(100% time value at both points).  Through the in-the-money region the time value as a
-percentage of full value declines from 73% at S = 59.7 to 33% at S = 99.3 and to 4.5% at
-S = 200.0, but remains non-zero throughout the spot range.
-
-The time value is the walk-away right: the holder's option to abandon the ASCOT rather
-than pay the accreting recall price for a CB that has deteriorated below R(t).  As long
-as there is positive probability of an adverse credit or equity event causing the CB to
-fall below R(t) before recall expiry, this right has positive value.  The intrinsic
-approximation treats exercise as if it were immediate, ignoring this protection entirely.
-At S = 99.3, the gap is 9.69 per-100 (full = 29.30 versus intrinsic = 19.62, a 33%
-understatement).  Even deep in-the-money, where early exercise of a vanilla call is nearly
-certain, the walk-away right retains value because credit deterioration is an asymmetric
-downside risk that persists regardless of the current equity level.
-
----
-
-#### EQ Delta
-
-![ASCOT Delta vs Initial Parity (Default)](output/default/plot_delta.png)
-
-In the out-of-the-money region (S below S* = 41.58), the CB proxy Delta is zero because
-the OTM cutoff assigns zero ASCOT value and therefore zero hedging exposure.  The full
-ASCOT carries positive delta in this region: 0.007 at S = 20.0, rising to 0.142 at
-S = 41.4.  This delta arises because the full ASCOT has positive value even OTM (the
-walk-away right).  As spot rises, the CB rises, the probability that the CB will
-eventually cross R(t) before expiry increases, and the ASCOT option value rises.  The
-CB proxy misses this entirely because it does not recognise any ASCOT value below S*.
-
-Near S*, at S = 44.4 (first ITM point), the full delta is 0.173 versus the CB proxy
-0.091, a 91% excess.  At S*, the ASCOT is approximately at-the-money on the CB and the
-option's time value is near its maximum.  The time value is itself increasing with spot
-here (higher spot means both higher intrinsic and higher near-ATM option premium), adding
-to the intrinsic delta.  The full ASCOT delta therefore reflects both the intrinsic
-contribution and the rising time value, while the CB proxy captures only the intrinsic
-delta (= CB_delta = 0.091).
-
-The gap narrows through the mid-range.  The crossover occurs near S = 105 (at S = 105.4:
-full = 0.674, CB proxy = 0.677), which is approximately 105% of initial parity
-(conversion price = 100.00).  The crossover is therefore linked to the CB's own embedded
-option approaching at-the-money, not to the ASCOT recall level R0 = 95.  At the
-conversion price, the embedded CB equity option transitions from out-of-the-money to
-in-the-money: the CB delta is rising at its fastest rate (maximum CB gamma), closing the
-gap with the full ASCOT delta.
-
-Beyond the crossover the CB proxy exceeds the full delta: 0.742 versus 0.775 at
-S = 120.7, and 0.913 versus 0.965 at S = 200.0.  As the ASCOT moves deeper
-in-the-money, the walk-away put transitions from near-ATM to deep-OTM (CB >> R) and
-its value declines.  A declining walk-away put contributes a negative delta component to
-the full ASCOT: the put loses value as spot rises.  This offsets part of the intrinsic
-delta and pulls the full ASCOT delta below the CB proxy, which tracks only the
-always-positive intrinsic delta (CB_delta) with no such negative correction.
-
-The full ASCOT delta is smooth across S*, consistent with the smooth-pasting condition.
-The CB proxy steps from zero to the CB delta at S*, a structural discontinuity that
-reflects the kink in the intrinsic approximation.
-
----
-
-#### EQ Gamma
-
-![ASCOT Gamma vs Initial Parity (Default)](output/default/plot_gamma.png)
-
-In the out-of-the-money region, the CB proxy Gamma is zero by the cutoff convention.
-The full ASCOT Gamma is positive: 0.0019 at S = 20.0, rising to 0.0098 at S = 41.4.
-As spot increases in the OTM region, the probability of future exercise is increasing,
-and that increase accelerates (the ASCOT delta is itself rising), creating positive
-convexity.
-
-Near S*, the full ASCOT Gamma peaks and exceeds the CB proxy.  At S = 44.4: full = 0.0102
-versus CB proxy = 0.0064 (full 59% higher).  At this boundary the ASCOT is approximately
-at-the-money on the CB: a small move in the CB around its strike R produces a large change
-in the exercise probability, and therefore a large change in delta.  ATM options on any
-underlying have maximum gamma.  The CB itself near S* is bond-floor dominated (CB delta
-= 0.091), so the raw CB gamma is correspondingly small.  The option-on-CB amplification
-is what drives the full ASCOT gamma well above the CB proxy.
-
-The relationship reverses further in-the-money.  At S = 59.7 both values are approximately
-equal (0.0101).  At S = 99.3: full = 0.0056 versus CB proxy = 0.0084 (CB proxy 50%
-higher).  In this region the CB is transitioning from bond-dominated to equity-dominated
-valuation, gaining convexity as the embedded conversion option delta rises steeply.
-Simultaneously, the walk-away put is past its peak time value and declining: the put's
-contribution to the ASCOT's convexity is now a damping force.  The CB proxy gamma,
-reflecting the CB's own increasing convexity during the bond-to-equity transition,
-therefore exceeds the dampened full ASCOT gamma.
-
----
-
-#### EQ Vega
-
-![ASCOT Vega vs Initial Parity (Default)](output/default/plot_vega.png)
-
-The Vega comparison follows from the ASCOT decomposition.  Since the recall price R(t)
-is deterministic and not vol-sensitive, the intrinsic vega equals CB_vega, and therefore:
-
-    Vega_full = Vega_intrinsic + Vega_walk-away = CB_vega + Vega_walk-away
-
-The walk-away put is an option on the CB.  All options gain value when the underlying's
-volatility increases: higher equity vol implies fatter tails in the CB distribution,
-raising the probability of large adverse moves that the walk-away right protects against.
-Vega_walk-away is therefore strictly positive at all spot levels and maturities, making
-Vega_full > CB_vega = CB_proxy_vega universally.
-
-In the OTM region the CB proxy vega is zero (cutoff convention) while the full ASCOT
-carries walk-away vega entirely: 0.0074 per 1 vol point at S = 20.0, rising to 0.194
-at S = 41.4.
-
-In the in-the-money region the full vega consistently exceeds the CB proxy.  At S = 44.4:
-full = 0.2375, CB proxy = 0.0990 (ratio 2.4x).  The near-ATM walk-away put is highly
-vol-sensitive because it is exposed to CB moves in both directions around the strike R.
-At S = 99.3: full = 0.7695, CB proxy = 0.5070 (52% excess).  At S = 200.0: full =
-0.5527, CB proxy = 0.1586 (248% excess).
-
-The ratio grows with depth in-the-money because the two terms in the decomposition diverge.
-The CB proxy vega (= CB_vega) declines steeply in the deep-ITM regime: the CB's embedded
-conversion option is deeply in-the-money, its payoff is nearly linear, and small vol
-changes have little impact on its value.  The walk-away put's vega declines more slowly
-because even a deep-OTM put on the CB retains sensitivity to vol through its tail risk
-protection.  The CB proxy vega therefore falls faster than the walk-away put's
-contribution, widening the understatement from 52% at S = 99.3 to 248% at S = 200.
-
----
-
-#### IR01
-
-![ASCOT IR01 vs Initial Parity (Default)](output/default/plot_ir01.png)
-
-The CB proxy IR01 is zero in the OTM region by the cutoff convention.  The full ASCOT
-IR01 is -0.00071 per 1 bp at S = 20.0 (small negative: at very low spot the ASCOT is a
-call on a bond-dominated CB, and higher rates reduce the CB and the option value), turns
-positive above approximately S = 33 as the equity drift channel gains weight, and reaches
-+0.00121 at S = 41.4 (all OTM, CB proxy = 0).
-
-In the in-the-money region the full ASCOT IR01 and the CB proxy IR01 have opposite signs
-at every tested spot level.  The CB proxy IR01 is large and negative, reflecting the CB's
-bond duration: a higher rate discounts future CB cash flows more heavily, reducing the CB
-value and therefore the intrinsic.  At S = 44.4: CB proxy = -0.01765.  At S = 99.3:
-CB proxy = -0.00984.
-
-The full ASCOT IR01 is positive throughout: +0.00178 at S = 44.4, +0.01534 at
-S = 99.3, and +0.02275 at S = 200.0.  Two mechanisms drive this sign reversal, and
-both work in the same direction.
-
-First, the walk-away put appreciates when rates rise.  The walk-away put is a put on the
-CB: a rising rate reduces the CB, and a falling CB moves closer to the put's strike R,
-increasing the put's value.  This positive rate sensitivity is large enough to more than
-offset the negative intrinsic rate sensitivity (eroding CB - R).
-
-Second, the ASCOT PDE uses clean risk-free discounting without a credit spread.  A higher
-risk-free rate therefore raises the risk-neutral drift of the underlying equity directly,
-increasing the expected future trajectory of the CB and the probability of exercise.  This
-drift channel is entirely absent from the CB, which is discounted at the credit-blended
-rate r + lambda*(1 - p_conv).
-
-Both mechanisms reinforce each other.  The signed gap at S = 99.3 is (+0.01534) -
-(-0.00984) = +0.02518 per 1 bp per-100.  Using the CB proxy for IR01 hedging would
-reverse the direction of the rate hedge at every in-the-money spot level.
-
----
-
-#### CS01
-
-![ASCOT CS01 vs Initial Parity (Default)](output/default/plot_cs01.png)
-
-The CB proxy CS01 is zero in the OTM region by the cutoff convention.  The full ASCOT
-CS01 is also zero to six decimal places at every tested spot level across both the OTM
-and ITM regions.
-
-In the in-the-money region the CB proxy CS01 is large and negative: -0.01556 per 1 bp
-per-100 at S = 44.4, -0.00568 at S = 99.3, and -0.00052 at S = 200.0.  These represent
-the full CB credit duration at each spot level.  The full ASCOT CS01 is 0.0000 at every
-tested level.
-
-The zero full CS01 follows from the ASCOT's structure.  When the hazard rate rises, two
-effects act on the full ASCOT in opposite directions.
-
-First, the intrinsic erodes: the CB falls (credit-blended discounting in the TF model
-raises the effective discount rate on bond cash flows), reducing max(CB - R, 0).  This
-negative channel equals CB_CS01.
-
-Second, the walk-away put appreciates: a wider credit spread raises the probability of
-large adverse CB moves, increasing the value of the right to abandon.  This positive
-channel exactly equals -CB_CS01 for the default instrument (lambda = 2.00%).
-
-The exact cancellation reflects a structural property of the ASCOT PDE: the ASCOT
-discounts at the clean risk-free rate, not at the credit-blended rate used by the CB.
-Lambda enters the ASCOT valuation only through the CB obstacle.  When lambda rises, the
-CB obstacle falls and the walk-away put gains by exactly the same amount.  The ASCOT
-holder is therefore structurally insulated from credit spread changes and carries neither
-the bond credit duration nor any residual credit exposure.
-
-The CB proxy attributes the full CB credit duration to the ASCOT holder.  Using it for
-CS01 hedging would create a spurious credit position with no basis in the true ASCOT
-exposure.
-
----
-
-**Summary for Default Instrument**
-
-The full American ASCOT produces risk profiles that differ materially from the CB proxy
-across all Greeks.  EQ Delta shows a crossover: full is 90% above the CB proxy near S*
-and falls below it above S = 105, reaching 0.913 versus 0.965 at S = 200.  EQ Gamma is
-59% above the CB proxy near S* and 33% below at S = 99.3.  EQ Vega exceeds the CB proxy
-by 52% at S = 99.3 and 248% at S = 200.  IR01 has the opposite sign to the CB proxy at
-every ITM spot, with a signed gap of +0.0252 per 1 bp per-100 at S = 99.3.  CS01 is
-identically zero for the full ASCOT while the CB proxy is -0.0156 per 1 bp per-100 at
-S = 44.4 and -0.0057 at S = 99.3.
-
----
-
-### 5.19.3 ASCOT Greek Profiles --- Kansai Paint (4613 JT)
+### 5.19.2 ASCOT Greek Profiles --- Kansai Paint (4613 JT)
 
 #### Instrument Terms
 
@@ -587,17 +348,26 @@ The initial recall level R(0) = 95.00 is crossed at S* = 2,196.12 (share price i
 Below this level the ASCOT intrinsic is zero.  The plot range is JPY 1,000 to JPY 4,000,
 spanning the out-of-the-money and in-the-money regions.
 
+Kansai is selected as the primary case because it is a plain vanilla CB — no issuer call
+and no holder put — so the CB price evolves smoothly as a function of equity spot without
+any embedded optionality introducing additional kinks or early-exercise boundaries.  This
+isolates the dynamic we want to study: how the moneyness of the CB relative to the recall
+price R(t) interacts with the American nature of the ASCOT payoff, without the CB's own
+optionality obscuring the picture.
+
 ---
 
 #### CB Profile
 
 ![CB Price vs Initial Parity (Kansai Paint)](output/kansai/plot_cb.png)
 
-The CB trades at 77.83 per-100 at S = 1,000 (below par, bond floor driven) and rises to
-145.51 per-100 at S = 4,000 as the equity option gains intrinsic value.  The zero-coupon
-structure and long maturity produce a lower bond floor relative to par.  The conversion
-value line κS (with κ = 0.036119) rises slowly with spot, reflecting the small conversion
-ratio in JPY.  The initial recall level R(0) = 95.00 is crossed at S* = 2,196.12.
+The CB price is bond-floor-dominated at low spot, where the zero-coupon structure and
+long maturity produce a floor well below par.  As spot rises, the embedded conversion
+option gains value and the CB transitions progressively toward its conversion value κS.
+The initial recall level R(0) = 95.00 is crossed at S* = 2,196.12 (79.3% of the
+conversion price), marking the point at which the ASCOT enters the money.  The CB
+therefore already carries meaningful equity sensitivity before the ASCOT becomes
+in-the-money.
 
 ---
 
@@ -605,16 +375,36 @@ ratio in JPY.  The initial recall level R(0) = 95.00 is crossed at S* = 2,196.12
 
 ![ASCOT PV vs Initial Parity (Kansai Paint)](output/kansai/plot_pv.png)
 
-The time value as a fraction of full ASCOT value is very high throughout the range.  For
-all spot levels below S* = 2,196.12, the intrinsic is zero and the full ASCOT value is
-entirely time value: 1.05 at S = 1,000, rising to 11.47 at S = 2,017 (100% time value at
-all out-of-the-money levels).  Through the in-the-money region the time value as a
-percentage of full value declines but remains substantial: 83.7% at S = 2,322 (just barely
-in-the-money, intrinsic = 2.74), 53.5% at S = 2,678, and 13.9% at S = 4,000 (intrinsic
-= 50.51, full = 58.65).
+The plot shows the full ASCOT value and the intrinsic, with the shaded gap between them
+representing the walk-away put value.  Below S*, the intrinsic is zero and the shaded
+region spans the entire ASCOT value.  Through the ITM region the intrinsic grows but the
+shaded gap remains material throughout the spot range: even at 144.5% parity the
+walk-away put accounts for approximately 14% of the full value (8.14 per-100 on a full
+value of 58.65 per-100), reflecting the long recall period over which a credit event
+could occur.  The intrinsic approximation understates the full ASCOT value at every spot
+level and by a growing absolute amount through the middle of the range.
 
-At S = 4,000 the time value is 8.14 per-100.  Using the intrinsic approximation would
-understate the full ASCOT value by 8.14 per-100 (16.1%) at this level.
+---
+
+#### Walk-Away Put Profile
+
+![Walk-Away Put Value and Delta (Kansai Paint)](output/kansai/plot_walk_away_put.png)
+
+The walk-away put value and delta are isolated as value = ASCOT_full − ASCOT_intrinsic
+and delta = Delta_full − Delta_intrinsic.
+
+**Value panel.**  The walk-away put value rises through the OTM region, peaks near S*,
+and then declines gradually through the ITM range.  The rising OTM profile is notable:
+as spot approaches S*, the ASCOT becomes increasingly likely to be exercised in the
+future, making the protection against a bad outcome more valuable.  The gradual ITM
+decline reflects the falling probability that a credit event will be severe enough to
+push the CB back below R(t) before recall expiry, but the long maturity keeps this
+residual value material even at the top of the spot range.
+
+**Delta panel.**  The walk-away put delta is positive and rising through the OTM region,
+peaks near S*, then flips to a roughly constant negative level in the ITM region (approximately −0.10).
+This sign flip at S* is the direct mechanism behind the full ASCOT delta behaviour
+described in the next section.
 
 ---
 
@@ -622,31 +412,28 @@ understate the full ASCOT value by 8.14 per-100 (16.1%) at this level.
 
 ![ASCOT Delta vs Initial Parity (Kansai Paint)](output/kansai/plot_delta.png)
 
-The CB proxy Delta is zero in the OTM region by the cutoff convention.  The full ASCOT
-Delta is positive throughout the OTM region from the walk-away put contribution: 0.117
-at S = 1,000 (36.1% parity), rising to 0.489 at S = 2,170 (78.4% parity; still OTM,
-CB proxy = 0).  Delta is plotted per parity point rather than per yen move in stock;
-equivalently the raw spot-space Delta is multiplied by dS/dParity = conversion price / 100.
-This normalization removes the mechanical scale effect from the low conversion ratio
-κ = 0.036119.
+Delta is plotted per parity point (raw spot-space delta multiplied by dS/dParity =
+conversion price / 100), removing the mechanical scale effect from the low conversion
+ratio κ = 0.036119.
 
-In the in-the-money region the full ASCOT Delta is consistently below the CB proxy Delta
-throughout the entire ITM range, with no crossover.  At the first ITM grid point
-S = 2,220 (80.2% parity): full = 0.503 versus CB proxy = 0.594 (full 15% below).  At
-S = 2,322 (83.9% parity): full = 0.529 versus CB proxy = 0.620 (full 15% below).  At
-S = 4,000 (144.5% parity): full = 0.809 versus CB proxy = 0.920 (full 12% below).
+**OTM region.**  The CB proxy Delta is zero by the cutoff convention.  The full ASCOT
+Delta is positive and rising throughout, driven entirely by the walk-away put delta being
+positive in this region.  As spot rises toward S*, the walk-away put gains value and its
+positive delta adds directly to the full ASCOT delta.
 
-The absence of a crossover is explained by the location of S* relative to initial parity.
-For this instrument S* = 2,196.12 (79.3% of the conversion price 2,768.60): the ASCOT
-enters in-the-money at a spot level where the CB's embedded equity option is already
-22% below its own conversion price, so the CB carries meaningful equity sensitivity
-at S*.  The OTM ASCOT delta at S* is 0.018 (spot-space) while the CB delta at S* is
-0.021 — the OTM delta is already below the CB delta, the time value gradient is
-immediately negative above S*, and Delta_full is below CB_Delta throughout the ITM
-region with no crossover.  This contrasts with the default instrument where S* is at
-only 41.6% of the conversion price: the CB is deep in its bond-dominated regime at S*
-(CB_delta ≈ 0.073), well below the ASCOT's accumulated OTM delta (0.142), producing
-an overshoot and a subsequent crossover near initial parity.
+**ITM region.**  The walk-away put delta flips to approximately −0.10 immediately above
+S* and remains near that level throughout the ITM range.  This roughly constant offset
+pulls the full ASCOT delta below the CB proxy by a stable margin across the entire ITM
+region.  The gap is approximately equal to the walk-away put delta, confirming that the
+delta shortfall is entirely attributable to the residual walk-away put value shrinking as
+spot rises.
+
+**No crossover.**  As derived in Section 5.12.2, a crossover requires the walk-away put
+delta to be positive immediately above S*.  For Kansai, S* sits at 79.3% of the
+conversion price, where the CB already carries meaningful equity sensitivity.  The
+accumulated OTM ASCOT delta entering S* (0.018 spot-space) is already below the CB delta
+at S* (0.021 spot-space), the walk-away put delta is negative from the first ITM point,
+and no crossover occurs.
 
 The full Delta profile is smooth across S*.  The CB proxy Delta has a structural
 discontinuity at S*, jumping from zero to the CB Delta at the boundary.
@@ -657,18 +444,15 @@ discontinuity at S*, jumping from zero to the CB Delta at the boundary.
 
 ![ASCOT Gamma vs Initial Parity (Kansai Paint)](output/kansai/plot_gamma.png)
 
-Gamma is plotted in parity-space using the squared chain-rule factor
-(dS/dParity)^2.  In the OTM region the CB proxy Gamma is zero by the cutoff convention,
-while the full ASCOT Gamma is positive: 0.0083 at S = 1,000 (36.1% parity), declining
-slightly to 0.0075 at S = 2,170 (78.4% parity).  In the ITM region, full Gamma remains
-below the CB proxy: at S = 2,322 (83.9% parity), full = 0.00696 versus CB proxy = 0.00705;
-at S = 4,000 (144.5% parity), full = 0.0029 versus CB proxy = 0.0034.  The intrinsic
-approximation shows a localized spike around the exercise boundary because it has a kink
-at CB = R0.
+Gamma is plotted in parity-space using the squared chain-rule factor (dS/dParity)².
+The full ASCOT Gamma is positive throughout and smooth.  In the OTM region the CB proxy
+Gamma is zero while the full ASCOT carries positive convexity, broadly flat across the
+OTM range.  In the ITM region the full Gamma runs modestly below the CB proxy.  The
+localized spike in the intrinsic approximation near S* is numerical noise from finite
+differencing of the step-function payoff and carries no economic content.
 
-The modest Gamma reflects the bond-floor-dominated nature of this CB across the tested
-spot range, where the equity conversion option contributes limited curvature relative to
-the bond component.
+The overall gamma profile is modest for both the full ASCOT and the CB proxy, reflecting
+the bond-floor-dominated nature of this CB across the tested spot range.
 
 ---
 
@@ -676,42 +460,18 @@ the bond component.
 
 ![ASCOT Vega vs Initial Parity (Kansai Paint)](output/kansai/plot_vega.png)
 
-The CB proxy Vega is zero in the OTM region by the cutoff convention.  The full ASCOT
-Vega is positive and substantial in the OTM region, attributable entirely to the walk-away
-put: 0.1714 per 1 vol point at S = 1,000, rising to 0.6145 at S = 1,864 and 0.7281
-at S = 2,170.
+The CB proxy Vega is zero OTM and tracks the CB standalone Vega in the ITM region.  The
+full ASCOT Vega exceeds the CB proxy throughout all regions; the gap widens progressively
+deeper in-the-money, reaching approximately double the CB proxy at the top of the tested
+range.  This widening occurs because the CB standalone Vega declines steeply as the
+conversion option becomes nearly linear deep ITM, while the walk-away put Vega declines
+more slowly — tail credit risk persists regardless of how far in-the-money the ASCOT is.
 
-In the in-the-money region the full ASCOT Vega exceeds the CB proxy Vega throughout,
-with the gap growing deeper in-the-money.  Near S*, at S = 2,220 (first ITM point):
-full = 0.7436 versus CB proxy = 0.7169 (full 3.7% above, nearly equal).  At S = 2,322:
-full = 0.7718 versus CB proxy = 0.7292 (full 5.8% above).  At S = 2,678: full = 0.8412
-versus CB proxy = 0.7377 (full 14% above).  At S = 4,000: full = 0.8093 versus CB proxy =
-0.3883 (full 108% above).
-
-The full Vega peaks around S = 3,288 at 0.8716 then declines, while the CB proxy Vega
-decreases more steeply, producing the widening relative gap at deep in-the-money levels.
-
----
-
-#### IR01
-
-![ASCOT IR01 vs Initial Parity (Kansai Paint)](output/kansai/plot_ir01.png)
-
-The CB proxy IR01 is zero in the OTM region by the cutoff convention.  The full ASCOT
-IR01 is positive throughout the OTM region: +0.00112 per 1 bp at S = 1,000, rising to +0.00923 at
-S = 2,170.
-
-In the in-the-money region the full ASCOT IR01 and the CB proxy IR01 have opposite signs
-at every tested spot level.  The CB proxy IR01 is large and negative, reflecting the CB's
-duration: -0.03350 at S = 2,220, -0.03196 at S = 2,322, and -0.00882 at S = 4,000.
-The full ASCOT IR01 is positive: +0.00964 at S = 2,220, +0.01043 at S = 2,322, and
-+0.01842 at S = 4,000.
-
-The signed gap between full and CB proxy IR01 at S = 2,220 is (+0.00964) - (-0.03350) =
-+0.04314 per 1 bp per-100.  At S = 2,322 the signed gap is (+0.01043) - (-0.03196) =
-+0.04239 per 1 bp per-100.  At S = 4,000 the signed gap is (+0.01842) - (-0.00882) =
-+0.02724 per 1 bp per-100.  Using the CB proxy for IR01 hedging in the in-the-money
-region would reverse the direction of the hedge at every tested spot level.
+A distinctive feature of Kansai is visible on the CB standalone line: in the OTM region,
+the full ASCOT Vega is below the CB standalone Vega.  This is because the ASCOT only
+partially participates in the CB's long-dated option vega (its delta-on-CB is less than 1
+OTM).  Once the ASCOT crosses into the ITM region the walk-away put's vega amplification
+dominates and the full ASCOT Vega exceeds the CB standalone.
 
 ---
 
@@ -719,32 +479,289 @@ region would reverse the direction of the hedge at every tested spot level.
 
 ![ASCOT CS01 vs Initial Parity (Kansai Paint)](output/kansai/plot_cs01.png)
 
-The CB proxy CS01 is zero in the OTM region by the cutoff convention.  The full ASCOT
-CS01 is negative and non-zero in the OTM region: -0.00051 per 1 bp per-100 at S = 1,000,
-rising in magnitude to -0.00224 at S = 2,170.  In this region the ASCOT is a deeply OTM
-call on the CB.  A rise in the hazard rate reduces the expected future CB value and
-therefore the probability of future exercise above R(0), reducing the ASCOT option value.
+Both curves are negative throughout.  In the OTM region the CB proxy is zero while the
+full ASCOT carries a small negative CS01: a higher credit spread reduces the expected
+future CB value and therefore the probability of profitable exercise, slightly reducing
+the walk-away put value.
 
-In the in-the-money region both the full ASCOT CS01 and the CB proxy CS01 are negative,
-but the magnitudes differ substantially.  The CB proxy CS01 is large and negative:
--0.03889 per 1 bp per-100 at S = 2,220, -0.03755 at S = 2,322, and -0.01203 at
-S = 4,000.  The full ASCOT CS01 is small: -0.00229 at S = 2,220 (5.9% of the CB proxy
-magnitude), -0.00237 at S = 2,322 (6.3%), and -0.00226 at S = 4,000 (18.8%).  The
-fraction of CB credit exposure absorbed by the full ASCOT ranges from approximately 6%
-to 19% across the ITM range, increasing as the ASCOT moves deeper in-the-money.
-
-Using the CB proxy for CS01 hedging in the in-the-money region would overstate the true
-credit exposure by a factor of roughly 5 to 17 across the tested range.
+In the ITM region the two curves diverge sharply.  The CB proxy CS01 is large and
+negative near S*, reflecting the CB's full credit duration, and declines gradually in
+magnitude as spot rises and the bond component diminishes.  The full ASCOT CS01 by
+contrast is small and roughly flat across the entire ITM range — close to zero
+throughout.  The gap between the two is therefore widest immediately above S* and narrows
+with depth in-the-money as the CB proxy CS01 itself decreases.  Using the CB proxy for
+CS01 hedging would establish a credit position far larger than the ASCOT actually carries
+at any ITM spot level.
 
 ---
 
-**Summary for Kansai Paint**
+#### IR01
 
-The full American ASCOT produces risk profiles that differ materially from the CB proxy
-across all Greeks.  EQ Delta is consistently 12 to 15% below the CB proxy in the ITM
-region, with no crossover.  EQ Gamma is negligible for both the full ASCOT and the CB
-proxy.  EQ Vega exceeds the CB proxy by 3.7% near S*, growing to 108% at S = 4,000.
-IR01 has the opposite sign to the CB proxy at every ITM spot, with a signed gap of +0.0431
-per 1 bp per-100 near S* and +0.0272 per 1 bp per-100 at S = 4,000.  CS01 is 6% to 19% of the CB proxy
-magnitude in the ITM region, with the CB proxy overstating the true credit exposure by
-5x to 17x.
+![ASCOT IR01 vs Initial Parity (Kansai Paint)](output/kansai/plot_ir01.png)
+
+The most prominent feature is the sign reversal between the full ASCOT and the CB proxy
+in the ITM region.  The CB proxy IR01 is zero OTM and large negative ITM, reflecting the
+CB's bond duration.  The full ASCOT IR01 is positive throughout — both OTM and ITM — and
+the two curves lie on opposite sides of zero at every ITM spot level.
+
+In the OTM region, the full ASCOT IR01 is positive and rising, driven by the equity drift
+channel.  In the ITM region, both the walk-away put appreciation and the equity drift
+channel push the full ASCOT IR01 positive, more than offsetting the negative intrinsic
+rate sensitivity.  Using the CB proxy for IR01 hedging would reverse the direction of
+the rate hedge at every in-the-money spot level.
+
+---
+
+### 5.19.3 Model Risk Exposure Analysis (MREA)
+
+The MREA quantifies the aggregate error from using the intrinsic approximation across the
+ASCOT book.  It is computed using the notional-weighted maturity (NWM) of all ASCOT
+positions in the book:
+
+> NWM = sum_i (N_i * T_i) / sum_i N_i
+
+where N_i is the signed notional of position i (positive = long, negative = short) and
+T_i is its remaining recall expiry.  For the current ASCOT book, the NWM is 2.7570 years
+and the total signed notional is JPY −2.664 billion (net short, after converting all
+USD-denominated positions to JPY).  The representative Greek profiles for a 2.7570-year
+effective ASCOT on Kansai Paint (all other parameters unchanged from Section 5.19.2) are
+used to characterise each position's misstatement.
+
+MREA figures represent the average difference (full American ASCOT minus intrinsic
+approximation) across the 80–120% initial parity range, scaled to the signed portfolio
+notional.  EQ Delta and EQ Gamma are expressed per 1 parity point move, which is
+equivalent to approximately 1% of the conversion price and provides a consistent
+normalisation across CBs with different underlying stock prices.  Positive MREA denotes
+an exposure the intrinsic convention underestimates in the direction adverse for the net
+short book; negative MREA denotes a hidden loss or over-hedge that intrinsic obscures.
+
+**ASCOT sensitivity assumptions**
+
+| Sensitivity | Bump assumption |
+|---|---|
+| EQ Delta | 1 parity point move (dS = JPY 27.69) |
+| EQ Gamma | 1 parity point move (Δdelta per parity point) |
+| Vega | 1 vol point (1% absolute shift in σ) |
+| IR01 | 1 bp parallel shift in r |
+| CS01 | 1 bp parallel shift in λ (credit hazard rate) |
+
+**MREA results**
+
+| Risk metric | Per-100 error (avg 80–120% parity) | Portfolio MREA (JPY −2.664bn net short) |
+|---|---|---|
+| PV (walk-away put) | +7.44 per 100 | −JPY 198.3M |
+| EQ Delta | −0.1054 per 100 per pp | +JPY 2.81M per pp |
+| EQ Gamma | −0.00578 per 100 per pp² | +JPY 0.15M per pp |
+| Vega | +0.0519 per 100 per vol pt | −JPY 1.38M per vol pt |
+| IR01 | +0.0298 per 100 per bp | −JPY 0.79M per bp |
+| CS01 | +0.0244 per 100 per bp | −JPY 0.65M per bp |
+
+**Interpretation**
+
+The PV MREA of −JPY 198.3M is a structural overstatement of the short book's value.
+The intrinsic assigns zero value to the walk-away put; as a net short book, this means
+the liability is understated by JPY 198.3M on average across the at-the-money region.
+The book appears JPY 198.3M more profitable than a full valuation would show.
+
+The EQ Delta MREA of +JPY 2.81M per parity point means the intrinsic over-hedges equity.
+The full ASCOT delta is lower than the intrinsic delta in the ITM region (walk-away put's
+negative delta offsets the CB delta); for a net short book the intrinsic therefore
+instructs the desk to sell more stock than necessary, leaving a hidden long delta of
++JPY 2.81M per parity point in the equity hedge.
+
+The Vega MREA of −JPY 1.38M per vol point means the intrinsic understates vol exposure.
+The book is more short vega than the intrinsic implies; a vol-hedged book would carry
+an unhedged short vega of JPY 1.38M per vol point.
+
+The IR01 MREA of −JPY 0.79M per bp reflects the sign reversal identified in Section
+5.12.5.  The full ASCOT carries positive IR01 per position; for the net short book this
+produces a negative portfolio IR01.  The intrinsic, assigning negative IR01 to each long
+ASCOT, gives the net short book a positive portfolio IR01.  The two are not only
+different in magnitude but opposite in sign, and a rate hedge built on intrinsic would be
+on the wrong side of the market.
+
+The CS01 MREA of −JPY 0.65M per bp captures the structural credit insulation of the full
+ASCOT.  The intrinsic tracks the CB's full credit duration; the full ASCOT is nearly
+credit-neutral through the walk-away put offset.  For the net short book, the intrinsic
+instructs an over-sized credit hedge: the desk would sell more credit protection than the
+position actually requires by JPY 0.65M per bp.
+
+---
+
+**Summary**
+
+The intrinsic approximation is not adequate or appropriate for pricing or hedging the
+ASCOT.  Across both instruments, the walk-away put — the time value discarded by the
+intrinsic convention — produces material and directionally incorrect risk sensitivities in
+every Greek.  EQ Delta is overstated ITM (the walk-away put's negative delta offsets the
+CB proxy), and the intrinsic assigns zero delta where the full ASCOT carries positive
+exposure OTM.  EQ Vega is understated at every spot level, with the gap widening with
+depth in-the-money.  CS01 is overstated: the full ASCOT CS01 is small and roughly flat
+near zero across the ITM range while the intrinsic tracks the CB's full credit duration.
+IR01 has the wrong sign: the full ASCOT IR01 is positive throughout the ITM range while
+the intrinsic IR01 is large and negative, so applying the intrinsic approximation as a
+hedge would reverse the rate position.
+
+The MREA quantifies these errors for the current book (JPY −2.664bn signed net notional
+in JPY, NWM 2.7570 years) over the 80–120% parity range.  For the net short book, the
+intrinsic overstates the portfolio value by JPY 198.3M (the walk-away put is a liability
+that intrinsic ignores), over-hedges equity delta by JPY 2.81M per parity point,
+understates short vega by JPY 1.38M per vol point, and applies rate and credit hedges
+that are wrong in both sign and magnitude (IR01 error: JPY 0.79M per bp; CS01 error:
+JPY 0.65M per bp).  The assumption that intrinsic valuation is adequate is rejected.
+
+---
+
+## Appendix A: ASCOT Greek Profiles — Synthetic Default Bundle
+
+The synthetic default bundle is a short-maturity coupon CB used primarily to validate the
+flat model against the QuantLib benchmark (Section 5.19.1).  Its Greek profiles are
+qualitatively consistent with the Kansai analysis but exhibit three contrasting features —
+a delta crossover, a different vega ordering OTM, and near-complete CS01 cancellation —
+that are instructive for understanding the general behaviour of the ASCOT decomposition.
+The ASCOT overlay uses recall price R(0) = 95.00 accreting to R(T) = 100.00 over a 5-year
+recall period.  S* = 41.58 (41.6% of the conversion price / par).
+
+---
+
+#### CB Profile
+
+![CB Price vs Initial Parity (Default Bundle)](output/default/plot_cb.png)
+
+The default bundle CB is coupon-bearing and short-dated, placing its bond floor close to
+par at low spot.  The CB has a steeper equity ramp than Kansai: because the conversion
+ratio κ = 1, each unit of spot maps directly to one share, and the conversion value is
+simply the spot level.  S* = 41.58 lies well below the conversion price (par = 100),
+meaning the CB is still heavily bond-dominated — and carries low equity sensitivity —
+when the ASCOT first enters the money.
+
+---
+
+#### PV Profile
+
+![ASCOT PV vs Initial Parity (Default Bundle)](output/default/plot_pv.png)
+
+The shaded walk-away put gap is clearly visible below S* and persists through the ITM
+region.  Relative to Kansai, the time value premium in the ITM region is smaller as a
+fraction of the full value, consistent with the shorter maturity reducing the residual
+probability of a credit event.  The intrinsic approximation understates the full ASCOT
+value at every spot level, though by a smaller margin than for the long-dated Kansai
+instrument.
+
+---
+
+#### Walk-Away Put Profile
+
+![Walk-Away Put Value and Delta (Default Bundle)](output/default/plot_walk_away_put.png)
+
+The walk-away put value and delta follow the same qualitative pattern as Kansai: value
+rises through the OTM region, peaks near S*, and declines through the ITM region; delta
+is positive OTM and flips negative in the ITM region.  The key quantitative difference is
+the smaller ITM value: the shorter maturity reduces the residual credit tail risk and the
+put value declines more steeply through the ITM range.
+
+---
+
+#### EQ Delta
+
+![ASCOT Delta vs Initial Parity (Default Bundle)](output/default/plot_delta.png)
+
+**OTM region.**  As with Kansai, the CB proxy is zero and the full ASCOT carries positive
+delta driven by the walk-away put's positive delta in this region.
+
+**ITM region — crossover.**  The default bundle exhibits a delta crossover that Kansai
+does not: immediately above S*, the full ASCOT delta briefly exceeds the CB proxy before
+falling below it further in-the-money.
+
+At S* = 41.58 (41.6% of par), the CB is still bond-dominated and carries low equity
+sensitivity.  The full ASCOT has accumulated positive delta from the entire OTM walk-away
+region entering S*.  This accumulated delta exceeds the CB's low equity delta at S*, so
+the walk-away put delta immediately above S* is still positive — it has not yet flipped
+sign.  Just above S*, the put delta transitions from positive to negative gradually; during
+this transition the full delta is above the CB proxy.  Once the put delta becomes
+sufficiently negative the full delta falls below the CB proxy and remains there through the
+rest of the ITM region.
+
+For Kansai, S* is at 79% of the conversion price where the CB already carries meaningful
+equity sensitivity, so the walk-away put delta is negative from the first ITM point and no
+crossover occurs.
+
+---
+
+#### EQ Gamma
+
+![ASCOT Gamma vs Initial Parity (Default Bundle)](output/default/plot_gamma.png)
+
+The default bundle Gamma is qualitatively similar to Kansai but more pronounced near S*:
+the shorter-dated option has higher curvature near the exercise boundary.  The spike in
+the intrinsic approximation near S* is again numerical noise from finite differencing and
+carries no economic content.  In the ITM region the full ASCOT Gamma declines toward the
+CB proxy level.
+
+---
+
+#### EQ Vega
+
+![ASCOT Vega vs Initial Parity (Default Bundle)](output/default/plot_vega.png)
+
+The full ASCOT vega exceeds both the CB proxy and the CB standalone across the entire
+spot range.  This is the key contrast with Kansai, where the full ASCOT vega is below the
+CB standalone in the OTM region.
+
+For this short-dated instrument, the embedded equity option is nearly worthless at low
+spot: the CB trades close to its bond floor and the conversion option contributes
+negligible vega.  Even the modest walk-away put vega exceeds this near-zero CB standalone
+vega, placing the full ASCOT above the CB standalone everywhere.  In the ITM region the
+CB standalone vega rises as the equity ramp steepens, but the walk-away put's additional
+contribution keeps the full above both the CB proxy and the CB standalone throughout.
+
+---
+
+#### CS01
+
+![ASCOT CS01 vs Initial Parity (Default Bundle)](output/default/plot_cs01.png)
+
+The near-complete CS01 cancellation is the most striking feature of the default bundle.
+The full ASCOT CS01 is indistinguishable from zero across the entire spot range, including
+deep in-the-money, while the CB proxy CS01 is large and negative in the ITM region.  The
+walk-away put's gain from a spread widening cancels the intrinsic loss almost exactly.
+
+For Kansai, the cancellation is only partial because the longer maturity and lower hazard
+rate mean the walk-away put does not gain as much from the same spread widening relative
+to the intrinsic loss.  For the default bundle, the higher hazard rate (2%) and shorter
+maturity combine to make the walk-away put's credit sensitivity closely track the
+intrinsic's, producing near-complete offset.  The ASCOT holder is effectively
+credit-neutral across the tested spot range.
+
+---
+
+#### IR01
+
+![ASCOT IR01 vs Initial Parity (Default Bundle)](output/default/plot_ir01.png)
+
+As with Kansai, the full ASCOT IR01 and the CB proxy IR01 have opposite signs at every
+ITM spot level.  The CB proxy IR01 is negative (bond duration); the full ASCOT IR01 is
+positive throughout.  Both the walk-away put appreciation channel and the equity drift
+channel operate here in the same way as described for Kansai in Section 5.12.5.
+
+The magnitude of the sign reversal is more pronounced for the default bundle relative to
+Kansai, consistent with the near-complete CS01 cancellation: an instrument that is
+effectively credit-neutral is also more strongly insulated from the bond-floor component
+of rate sensitivity, producing a larger positive IR01 offset.
+
+---
+
+#### Summary
+
+| Greek | Kansai (main case) | Default bundle (appendix) |
+|---|---|---|
+| EQ Delta (ITM) | ~−0.10 below CB proxy; no crossover | Crossover just above S*, then below CB proxy |
+| EQ Gamma | Modest; numerical noise near S* | Similar; more pronounced at S* |
+| EQ Vega (vs CB standalone) | Below CB standalone OTM; above ITM | Above CB standalone across entire range |
+| CS01 (ITM) | Full small and flat; CB proxy large and negative near S* | Full ≈ 0 throughout; near-complete cancellation |
+| IR01 (ITM) | Opposite sign to CB proxy | Opposite sign to CB proxy; larger reversal |
+
+The contrast between the two instruments illustrates that the qualitative features of the
+ASCOT decomposition — positive walk-away put delta OTM, CS01 structural insulation, IR01
+sign reversal — are robust across instrument types, while the degree of cancellation and
+the presence or absence of a delta crossover depend on the CB characteristics at S*.
